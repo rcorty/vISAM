@@ -1,0 +1,12 @@
+Package: wIASM
+Type: Package
+Title: Weighted Inbred Strain Association Mapping
+Version: 0.1.0
+Author: Robert W. Cort <robert_corty@med.unc.edu>
+Maintainer: Robert W. Cort <robert_corty@med.unc.edu>
+Description: More about what it does (maybe more than one line)
+    Use four spaces when indenting paragraphs within the Description.
+License: GPLv3
+Encoding: UTF-8
+LazyData: true
+Suggests: testthat
