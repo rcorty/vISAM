@@ -1,6 +1,6 @@
 context('Testing whether GenomeScan runs without error')
 
-library(MASS)
+# library(MASS)
 
 set.seed(seed = 27599)
 
@@ -14,10 +14,10 @@ X <- matrix(data = sample(x = n*c), nrow = n)
 G <- matrix(data = rbinom(n = n*p, size = 2, prob = 0.3), nrow = n, ncol = p)
 K <- 1 - as.matrix(x = dist(x = G, method = 'manhattan'))/p
 
-A <- mvrnorm(n = 1,
-             mu = rep(0, n),
-             # mu = G %*% replace(x = rep(0, p), list = 1, values = 1),
-             Sigma = K)
+A <- MASS::mvrnorm(n = 1,
+                   mu = rep(0, n),
+                   # mu = G %*% replace(x = rep(0, p), list = 1, values = 1),
+                   Sigma = K)
 E <- rnorm(n = n, sd = w)
 y <- A + E
 
