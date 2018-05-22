@@ -1,4 +1,4 @@
 library(testthat)
-library(vIASM)
+library(wISAM)
 
-test_check("vIASM")
+test_check("wISAM")

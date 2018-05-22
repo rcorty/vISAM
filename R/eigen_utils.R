@@ -23,3 +23,18 @@ check_eigen_decomposition <- function(e, tol = 1e-6) {
     }
     return(e$values)
 }
+
+
+low_rank_eigen <- function(Z, K) {
+    e <- eigen(K%*%crossprod(Z,Z),symmetric=FALSE)
+    return(list(values=e$values, vectors=qr.Q(qr(Z%*%e$vectors))))
+}
+
+
+
+
+subset_eigen <- function(l, good_idxs) {
+
+    return(list(values = l$values[good_idxs],
+                vectors = l$vectors[good_idxs, good_idxs]))
+}

@@ -2,28 +2,33 @@
 #'
 #' @description A Reference Class implementing a Genome Scan
 #'
+#' @field Options these are options
 #' @field Data Things the user inputs.
 #' They have interpretable meaning and define the GenomeScan.
-#' Currently: y, X, G, K, and weights.
+#' Currently: y, X, G, K, weights (inverse variances), and variances.
 #' @field Intermediates_per_scan Things the GenomeScan will compute once per scan.
 #' They are mathetmatical tools that can't really be interpreted.
 #' Currently: L, eigen_L, and LL_null.
 #' @field Intermediates_per_locus Things the GenomeScan will compute once per locus.
-#' They are mathetmatical tools that can't really be interpreted.
+#' They are mathematical tools that can't really be interpreted.
 #' Currently: XG
-#' @field Intermediates_per_fit Things the Genomecan will compute many times per locus (once per trial fit on that locus).
+#' @field Intermediates_per_fit Things the GenomeScan will compute many times per locus (once per trial fit on that locus).
 #' These are interpretable but rapidly changing and not guaranteed to be finalized or optimal.
 #' Currently: M, LDV, and h2
 #' @field Results The results of the GenomeScan.
 #' Currently: The h2 that maximizes the LL at each locus and the LR as compared with the no-locus (null) model.
 #'
 #'
-#' @export
+#' @export GenomeScan
+#' @exportClass GenomeScan
+#'
+#' @importFrom methods new
 #'
 GenomeScan <- setRefClass(
         Class = 'GenomeScan',
-        fields = c('Data',                    # y, X, G, K, and weights --
-                   'Intermediates_per_scan',  # L, eigen_L, LL_0 -- uninterpretable computational tools that are constant for a GenomeScan
+        fields = c('Options',
+                   'Data',                    # y, X, G, K, and weights --
+                   'Intermediates_per_scan',  # L, eigen_L, LL_null, h2_null -- uninterpretable computational tools that are constant for a GenomeScan
                    'Intermediates_per_locus', # M -- uninterpretable computational tools that are constant for a locus
                    'Intermediates_per_fit',   # sigma_a and sigma_e -- interpretable, but changing very fast, don't look here for results
                    'Results'))                # maximum likelihood LL, sigma_a, and sigma_e for each locus
@@ -36,54 +41,60 @@ GenomeScan <- setRefClass(
 #'
 #' @description Initialize a GenomeScan
 #'
-#' @param y vector of length n - the phenotype of each of n individuals
+#' @param y vector of length n - the phenotype of each of n genomes (individuals or strains)
 #' @param X matrix of dimension n-by-c - the covariate value of each individual for c covariates
-#' @param G matrix of dimension n-by-p - the genotype of each individual at p loci
+#' @param G a list where each element is of length n - the genotype of each individual at p loci
 #' @param K matrix of dimension n-by-n - the covariance of the phenotype
-#' @param w matrix of dimension n-by-n - the covariance of the phenotype
+#' @param w matrix of dimension n-by-n - the inverse variance of the phenotype
 #'
 #' @return an object of class GenomeScan
 NULL
 GenomeScan$methods(
-    initialize = function(y, X, G, K, w = rep(1, length(y))) {
+    initialize = function(y, X, G, K, w, tol = 1e-8) {
+
+        n <- length(y)
+
+        # browser()
+
+        #### UNACCEPTABLE MISSINGNESS ####
+        if (missing(y)) { stop('Must provide y (n-vector of phenotypes) to initialize a GenomeScan.') }
+        if (missing(K)) { stop('No covariance information provided.  If none known, use lme4::lmer().  If known, input it as K.') }
+
+        #### ACCEPTABLE MISSINGNESS ####
+        if (missing(w)) { w <- rep(1, n) }
+        if (missing(X)) { X <- matrix(data = 1, nrow = n) }
+        if (missing(G)) { G <- list(matrix(data = 0, nrow = n)) }
 
         #### CONDITIONS THAT CAUSE AN ERROR ####
-        if (any(missing(y), missing(G))) {
-            stop('Must provide y (n-vector of phenotypes) and G (n-by-p matrix of genotypes) to define a GenomeScan.')
-        }
-        if (missing(K)) {
-            stop('No covariance information provided.  If none known, use lme4::lmer().  If known, input it as K.')
-        }
-        if (!all(length(y) == c(nrow(X), nrow(G), dim(K), length(w)))) {
+        if (!all(c(nrow(X), sapply(X = G, FUN = nrow), dim(K), length(w)) == n)) {
             stop("Input dimensions don't match.")
         }
 
-        #### CONDITIONS THAT CAN BE MASSAGED INTO WORKING ####
-        if (missing(X)) {
-            X <- matrix(data = 1, nrow = length(y))
-        }
+        # browser()
 
         # deal with NA data and non-positive weights
         to_carve <- is.na(y)
         to_carve <- to_carve | rowSums(x = is.na(X))
-        to_carve <- to_carve | rowSums(x = is.na(G))
+        # to_carve <- to_carve | rowSums(x = is.na(G))
         to_carve <- to_carve | rowSums(x = is.na(K))
         to_carve <- to_carve | is.na(w)
         to_carve <- to_carve | w <= 0
         if (any(to_carve)) {
-            message('Removing ', sum(to_carve), ' observations due to NA phenotype, K, or weight or non-positive weight.')
+            message('Removing ', sum(to_carve), ' observations due to NA phenotype, covariate, K, or weight or non-positive weight.')
             y <- y[!to_carve]
             X <- X[!to_carve,]
-            G <- G[!to_carve,]
+            G <- lapply(X = G, FUN = function(m) m[!to_carve,])
             K <- K[!to_carve, !to_carve]
             w <- w[!to_carve]
         }
 
-        Data <<- list(num_obs = length(y),
-                      num_loci = ncol(G),
-                      y = y, X = X, G = G, K = K, w = w)
+        Options <<- list(tol = tol)
 
-        Results <<- list(LR = NULL, h2 = NULL)
+        Data <<- list(num_obs = n,
+                      num_loci = length(G),
+                      y = y, X = X, G = G, K = K, w = w, v = 1/w)
+
+        Results <<- list(LR = NULL, h2 = NULL, beta = NULL)
     }
 )
 
@@ -97,10 +108,16 @@ GenomeScan$methods(
 #' @return an object of class GenomeScan
 NULL
 GenomeScan$methods(
-    prep_scan = function() {
+    prep_scan = function(silent = FALSE, noreturn = FALSE) {
 
-        message('Preparing GenomeScan...')
-        L <- diag(1/sqrt(Data$w)) %*% Data$K %*% diag(1/sqrt(Data$w))
+        if (!silent) { message('Preparing GenomeScan...') }
+
+        # compute L
+        # matrix math version
+        # L <- diag(sqrt(Data$w)) %*% Data$K %*% diag(sqrt(Data$w))
+        # vector-matrix math version (faster)
+        L <- t(t(sqrt(Data$w) * Data$K) * sqrt(Data$w))
+
         eigen_L <- eigen(x = L, symmetric = TRUE)
         eigen_L$values <- check_eigen_decomposition(eigen_L)
 
@@ -108,7 +125,9 @@ GenomeScan$methods(
         # fit the null model
         Intermediates_per_scan <<- list(L = L, eigen_L = eigen_L)
         null_fit <- .self$fit_locus(locus_idx = NULL)
-        Intermediates_per_scan <<- c(Intermediates_per_scan, LL_null = null_fit$LL)
+        Intermediates_per_scan <<- c(Intermediates_per_scan,
+                                     LL_null = null_fit$LL,
+                                     h2_null = null_fit$h2)
 
         return(.self)
     }
@@ -128,7 +147,9 @@ GenomeScan$methods(
 #'
 NULL
 GenomeScan$methods(
-    conduct_scan = function() {
+    conduct_scan = function(silent = FALSE) {
+
+        if (!silent) { message('Conducting GenomeScan...') }
 
         if ('uninitializedField' %in% class(Intermediates_per_scan)) {
             .self$prep_scan()
@@ -138,8 +159,10 @@ GenomeScan$methods(
 
             fit <- fit_locus(locus_idx = locus_idx)
 
-            Results <<- list(LR = replace(x = Results$LR, list = locus_idx, values = 2*(fit$LL - Intermediates_per_scan$LL_null)),
-                             h2 = replace(x = Results$h2, list = locus_idx, values = fit$h2))
+            Results <<- list(LR   = replace(x = Results$LR,   list = locus_idx, values = 2*(fit$LL - Intermediates_per_scan$LL_null)),
+                             h2   = replace(x = Results$h2,   list = locus_idx, values = fit$h2),
+                             beta = replace(x = Results$beta, list = locus_idx, values = fit$beta),
+                             n    = replace(x = Results$n,    list = locus_idx, values = fit$n))
         }
 
         return(.self)
@@ -162,19 +185,39 @@ NULL
 GenomeScan$methods(
     fit_locus = function(locus_idx) {
 
+        # browser()
+
         if (is.null(locus_idx)) {
-            Intermediates_per_locus <<- list(XG = Data$X)
+            G <- NULL
+            good_idxs <- 1:length(Data$y)
         } else {
-            Intermediates_per_locus <<- list(XG = cbind(Data$G[,locus_idx], Data$X))
+            G <- Data$G[[locus_idx]]
+            good_idxs <- good_idxs <- !is.na(G)
         }
+
+
+        Intermediates_per_locus <<- list(y = Data$y[good_idxs],
+                                         XG = cbind(Data$X, G)[good_idxs,],
+                                         eigen_L = subset_eigen(l = Intermediates_per_scan$eigen_L,
+                                                                good_idxs = good_idxs),
+                                         v = Data$v[good_idxs],
+                                         w = Data$w[good_idxs])
 
         opt <- optimize(f = .self$fit_locus_given_h2,
                         lower = 0,
                         upper = 1,
-                        maximum = TRUE)
+                        maximum = TRUE,
+                        tol = Options$tol)
+
+        # browser()
+
+        fit <- lm.fit(x = Intermediates_per_fit$M %*% Intermediates_per_locus$XG,
+                      y = Intermediates_per_fit$M %*% Intermediates_per_locus$y)
 
         return(list(h2 = opt[[1]],
-                    LL = opt[[2]]))
+                    LL = opt[[2]],
+                    beta = coef(fit)[length(coef(fit))],
+                    n = length(Intermediates_per_locus$y)))
 
     }
 )
@@ -195,7 +238,7 @@ GenomeScan$methods(
         .self$calc_multiplier_eigen(h2 = h2)
 
         fit <- lm.fit(x = Intermediates_per_fit$M %*% Intermediates_per_locus$XG,
-                      y = Intermediates_per_fit$M %*% Data$y)
+                      y = Intermediates_per_fit$M %*% Intermediates_per_locus$y)
 
         n <- Data$num_obs
         sigma2_mle <- sum(fit$residuals^2)/n
@@ -223,11 +266,22 @@ GenomeScan$methods(
             stop('Must provide `h2` to `calc_multiplier_eigen`.')
         }
 
-        eigen_L <- Intermediates_per_scan$eigen_L
+        eigen_L <- Intermediates_per_locus$eigen_L
+        v <- Intermediates_per_locus$v
+        w <- Intermediates_per_locus$w
 
-        w <- Data$w
-        M <- (1/sqrt(h2*eigen_L$values + (1 - h2)) * (1/sqrt(w) * t(eigen_L$vectors)))
-        LDV <- sum(log(w)) + sum(log(h2*eigen_L$values + (1 - h2)))
+        d <- h2*eigen_L$values + (1 - h2)
+        M <- 1/sqrt(d) * t(sqrt(w) * eigen_L$vectors)
+        # browser()
+        # here is the slower way to calculate it, but it looks more like the math notation
+        # i have verified they are the same -- RWC
+        # M <- diag(1/sqrt(h2*eigen_L$values + (1 - h2))) %*% t(eigen_L$vectors) %*% diag(v)
+        LDV <- sum(log(v)) + sum(log(d))
+
+        # M <-
+        #diag(1/(h2*eigen_L$values + (1-h2))) %*% t(eigen_L$vectors) %*% diag(sqrt(w))
+        # LDV <- sum(log(1/w)) + sum(log(h2*eigen_L$values + (1-h2)))
+
 
         Intermediates_per_fit <<- list(M = M,
                                        LDV = LDV,

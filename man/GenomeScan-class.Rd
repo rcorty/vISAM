@@ -11,19 +11,21 @@ A Reference Class implementing a Genome Scan
 \section{Fields}{
 
 \describe{
+\item{\code{Options}}{these are options}
+
 \item{\code{Data}}{Things the user inputs.
 They have interpretable meaning and define the GenomeScan.
-Currently: y, X, G, K, and weights.}
+Currently: y, X, G, K, weights (inverse variances), and variances.}
 
 \item{\code{Intermediates_per_scan}}{Things the GenomeScan will compute once per scan.
 They are mathetmatical tools that can't really be interpreted.
 Currently: L, eigen_L, and LL_null.}
 
 \item{\code{Intermediates_per_locus}}{Things the GenomeScan will compute once per locus.
-They are mathetmatical tools that can't really be interpreted.
+They are mathematical tools that can't really be interpreted.
 Currently: XG}
 
-\item{\code{Intermediates_per_fit}}{Things the Genomecan will compute many times per locus (once per trial fit on that locus).
+\item{\code{Intermediates_per_fit}}{Things the GenomeScan will compute many times per locus (once per trial fit on that locus).
 These are interpretable but rapidly changing and not guaranteed to be finalized or optimal.
 Currently: M, LDV, and h2}
 

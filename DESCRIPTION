@@ -1,11 +1,16 @@
-Package: vIASM
+Package: wISAM
 Type: Package
 Title: Weighted Inbred Strain Association Mapping
-Version: 0.1.0
+Version: 0.2.3
 Author: Robert W. Cort <robert_corty@med.unc.edu>
 Maintainer: Robert W. Cort <robert_corty@med.unc.edu>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Description: In the course of an inbred strain association mapping study,
+    there may be more information about the mean phenotype of some strains
+    than about others.  This situation arises when there is heterogeneity
+    in the number of observations per strain, or in the residual variance
+    across strains.  This packaged allows the user to conduct an
+    association mapping study that accounts for this heterogeneity of 
+    precision.
 License: GPL-3
 Encoding: UTF-8
 LazyData: true

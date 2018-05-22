@@ -4,15 +4,15 @@
 \alias{GenomeScan_initialize}
 \title{initialize}
 \arguments{
-\item{y}{vector of length n - the phenotype of each of n individuals}
+\item{y}{vector of length n - the phenotype of each of n genomes (individuals or strains)}
 
 \item{X}{matrix of dimension n-by-c - the covariate value of each individual for c covariates}
 
-\item{G}{matrix of dimension n-by-p - the genotype of each individual at p loci}
+\item{G}{a list where each element is of length n - the genotype of each individual at p loci}
 
 \item{K}{matrix of dimension n-by-n - the covariance of the phenotype}
 
-\item{w}{matrix of dimension n-by-n - the covariance of the phenotype}
+\item{w}{matrix of dimension n-by-n - the inverse variance of the phenotype}
 }
 \value{
 an object of class GenomeScan
