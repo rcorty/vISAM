@@ -44,7 +44,7 @@ to implement the GenomeScan object.
 library(wISAM)
 
 gs <- GenomeScan$new(y = phenotype, X = covariate_mat, G = locus_list, K = kinship_mat)
-wgs <- GenomeScan$new(y = phenotype, X = covariate_mat, G = locus_list, K = kinship_mat, w = se_mean_per_strain)
+wgs <- GenomeScan$new(y = phenotype, X = covariate_mat, G = locus_list, K = kinship_mat, w = 1/se_mean_per_strain)
 ```
 
 You can then call `prep_scan`, which computes the quantities that will
