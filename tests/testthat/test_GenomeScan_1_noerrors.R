@@ -2,23 +2,21 @@ context('Testing whether GenomeScan runs without error')
 
 set.seed(seed = 27599)
 
-num_strains <- 1e2
+num_strains <- 2e2
 num_covariates <- 4
 num_snps <- 1e2
 
-orgs_per_strain <- sample(x = c(-2, -1, 0, 1, 2), size = num_strains, replace = TRUE) + 10
-true_strain_var <- rnorm(n = num_strains, mean = 10, sd = 2)
-se_mean_per_strain <- true_strain_var/sqrt(orgs_per_strain)
+se_mean_per_strain <- rep(x = sqrt(x = c(0.25, 0.5, 1, 2, 4)), length.out = num_strains)
 
 covariate_mat <- matrix(data = sample(x = num_strains*num_covariates), nrow = num_strains)
-genotype_mat <- matrix(data = rbinom(n = num_strains*num_snps, size = 2, prob = 0.3), nrow = num_strains, ncol = num_snps)
+genotype_mat <- matrix(data = rbinom(n = num_strains*num_snps, size = 1, prob = 0.3), nrow = num_strains, ncol = num_snps)
 kinship_mat <- 1 - as.matrix(x = dist(x = genotype_mat, method = 'manhattan'))/num_snps
 
-num_one_snp <- sample(x = 1:num_snps, size = 1)
+num_one_snp <- 1
 
 A <- MASS::mvrnorm(n = 1,
                    # mu = rep(0, n),
-                   mu = genotype_mat[, num_one_snp],
+                   mu = 2*genotype_mat[, num_one_snp],
                    Sigma = kinship_mat)
 E <- rnorm(n = num_strains, sd = se_mean_per_strain)
 phenotype <- A + E
@@ -26,7 +24,7 @@ phenotype <- A + E
 locus_list <- lapply(X = as.data.frame(x = genotype_mat), FUN = as.matrix)
 
 gs <- GenomeScan$new(y = phenotype, X = covariate_mat, G = locus_list, K = kinship_mat)
-wgs <- GenomeScan$new(y = phenotype, X = covariate_mat, G = locus_list, K = kinship_mat, w = se_mean_per_strain)
+wgs <- GenomeScan$new(y = phenotype, X = covariate_mat, G = locus_list, K = kinship_mat, w = 1/se_mean_per_strain)
 
 
 test_that(desc = 'Create a GenomeScan object',
