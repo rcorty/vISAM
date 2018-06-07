@@ -12,3 +12,15 @@ Conducts the GenomeScan.
 \note{
 TODO: allow user to specify subset of chromosomes or loci
 }
+\examples{
+library(wISAM)
+
+wgs <- GenomeScan$new(y = phenotype,
+                      X = covariate_mat,
+                      G = locus_list,
+                      K = kinship_mat,
+                      w = 1/se_mean_per_strain)
+
+result <- wgs$prep_scan()$conduct_scan()
+
+}

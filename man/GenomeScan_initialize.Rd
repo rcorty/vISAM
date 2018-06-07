@@ -20,3 +20,13 @@ an object of class GenomeScan
 \description{
 Initialize a GenomeScan
 }
+\examples{
+library(wISAM)
+
+wgs <- GenomeScan$new(y = phenotype,
+                      X = covariate_mat,
+                      G = locus_list,
+                      K = kinship_mat,
+                      w = 1/se_mean_per_strain)
+
+}

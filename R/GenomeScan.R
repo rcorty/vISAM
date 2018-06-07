@@ -48,6 +48,16 @@ GenomeScan <- setRefClass(
 #' @param w matrix of dimension n-by-n - the inverse variance of the phenotype
 #'
 #' @return an object of class GenomeScan
+#'
+#' @examples
+#' library(wISAM)
+#'
+#' wgs <- GenomeScan$new(y = phenotype,
+#'                       X = covariate_mat,
+#'                       G = locus_list,
+#'                       K = kinship_mat,
+#'                       w = 1/se_mean_per_strain)
+#'
 NULL
 GenomeScan$methods(
     initialize = function(y, X, G, K, w, tol = 1e-8) {
@@ -106,6 +116,18 @@ GenomeScan$methods(
 #' @description Prepare a GenomeScan for running.  Does all the computations that need to be done exactly once per genome scan.
 #'
 #' @return an object of class GenomeScan
+#'
+#' @examples
+#' library(wISAM)
+#'
+#' wgs <- GenomeScan$new(y = phenotype,
+#'                       X = covariate_mat,
+#'                       G = locus_list,
+#'                       K = kinship_mat,
+#'                       w = 1/se_mean_per_strain)
+#'
+#' result <- wgs$prep_scan()
+#'
 NULL
 GenomeScan$methods(
     prep_scan = function(silent = FALSE, noreturn = FALSE) {
@@ -144,6 +166,17 @@ GenomeScan$methods(
 #' @note TODO: allow user to specify subset of chromosomes or loci
 #'
 #' @return an object of class GenomeScan
+#'
+#' @examples
+#' library(wISAM)
+#'
+#' wgs <- GenomeScan$new(y = phenotype,
+#'                       X = covariate_mat,
+#'                       G = locus_list,
+#'                       K = kinship_mat,
+#'                       w = 1/se_mean_per_strain)
+#'
+#' result <- wgs$prep_scan()$conduct_scan()
 #'
 NULL
 GenomeScan$methods(

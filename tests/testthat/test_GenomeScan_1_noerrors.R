@@ -16,7 +16,7 @@ num_one_snp <- 1
 
 A <- MASS::mvrnorm(n = 1,
                    # mu = rep(0, n),
-                   mu = 1.1*genotype_mat[, num_one_snp],
+                   mu = 1.2*genotype_mat[, num_one_snp],
                    Sigma = kinship_mat)
 E <- rnorm(n = num_strains, sd = se_mean_per_strain)
 phenotype <- A + E

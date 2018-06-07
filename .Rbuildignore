@@ -3,4 +3,3 @@
 ^sandbox$
 ^sandbox/*$
 ^README\.Rmd$
-^README-.*\.png$

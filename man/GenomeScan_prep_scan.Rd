@@ -9,3 +9,15 @@ an object of class GenomeScan
 \description{
 Prepare a GenomeScan for running.  Does all the computations that need to be done exactly once per genome scan.
 }
+\examples{
+library(wISAM)
+
+wgs <- GenomeScan$new(y = phenotype,
+                      X = covariate_mat,
+                      G = locus_list,
+                      K = kinship_mat,
+                      w = 1/se_mean_per_strain)
+
+result <- wgs$prep_scan()
+
+}
